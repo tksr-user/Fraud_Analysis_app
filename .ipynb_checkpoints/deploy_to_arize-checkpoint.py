@@ -38,8 +38,8 @@ else:
     model = mlflow.sklearn.load_model(model_uri)
 
     # ✅ Load test data
-    X_test = pd.read_parquet("raud_analysis_app/data/fraud_data.parquet")
-    y_test = pd.read_parquet("raud_analysis_app/data/fraud_data.parquet")
+    X_test = pd.read_parquet("fraud_analysis_app/data/X_test.parquet")
+    y_test = pd.read_parquet("fraud_analysis_app/data/y_test.parquet")
     if isinstance(y_test, pd.DataFrame):
         y_test = y_test.squeeze()  # ensure it's a Series
 
