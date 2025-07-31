@@ -1,6 +1,7 @@
 Metadata-Version: 2.4
 Name: fraud_analysis_app
 Version: 0.1
+License-File: LICENSE
 Requires-Dist: pandas
 Requires-Dist: scikit-learn
 Requires-Dist: mlflow
@@ -8,4 +9,5 @@ Requires-Dist: xgboost
 Requires-Dist: optuna
 Requires-Dist: gpt4all
 Requires-Dist: joblib
+Dynamic: license-file
 Dynamic: requires-dist

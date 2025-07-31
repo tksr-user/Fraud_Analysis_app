@@ -1,3 +1,4 @@
+LICENSE
 README.md
 pyproject.toml
 setup.py
@@ -15,5 +16,8 @@ fraud_analysis_app/evaluation/__init__.py
 fraud_analysis_app/features/__init__.py
 fraud_analysis_app/features/transformer.py
 fraud_analysis_app/models/__init__.py
+fraud_analysis_app/models/train_all_experiments.py
 fraud_analysis_app/models/train_all_models.py
 fraud_analysis_app/tracking/__init__.py
+tests/test_loader.py
+tests/test_train.py

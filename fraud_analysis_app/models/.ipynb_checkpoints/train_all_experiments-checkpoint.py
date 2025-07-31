@@ -15,18 +15,24 @@ from sklearn.svm import SVC
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
 from mlflow.tracking import MlflowClient
 
-def main():
-    mlflow.set_tracking_uri("http://127.0.0.1:5000")
-    mlflow.set_experiment("Fraud_Detection_Comparison_v5")
 
+def main():
+    # ✅ Set MLflow tracking + experiment
+    mlflow.set_tracking_uri("http://127.0.0.1:5000")
+    mlflow.set_experiment("Fraud_Detection_Comparison_v4")
+
+    # ✅ Load dataset from Parquet
     df = pd.read_parquet("fraud_analysis_app/data/fraud_data.parquet").head(1000)
 
+    # ✅ Set target and preprocess
     target = "Class"
     X_full = df.drop(columns=[target])
     y = df[target]
 
+    # ✅ Drop high-cardinality object columns
     for col in X_full.select_dtypes(include="object").columns:
         if X_full[col].nunique() > 100:
+            print(f"Dropping column: {col} (unique: {X_full[col].nunique()})")
             X_full = X_full.drop(columns=col)
 
     X_full = pd.get_dummies(X_full)
@@ -35,16 +41,12 @@ def main():
     os.makedirs("artifacts", exist_ok=True)
     joblib.dump(all_features, "artifacts/feature_names.pkl")
 
-    # ✅ Define multiple feature sets (can add more or refine selection)
+    # ✅ Define feature subsets
     feature_sets = {
         "all_features": all_features,
-        "reduced_features_1": all_features[:20],
-        "reduced_features_2": all_features[20:40],
-        "first_half": all_features[:len(all_features)//2],
-        "second_half": all_features[len(all_features)//2:],
     }
 
-    # ✅ Define models and their search spaces
+    # ✅ Define models and hyperparameters
     models = {
         "LogisticRegression": {
             "model": LogisticRegression(max_iter=500),
@@ -60,22 +62,16 @@ def main():
         }
     }
 
-    total_runs = 0
-
+    # ✅ Train each model
     for feature_set_name, feature_set in feature_sets.items():
-        if total_runs >= 10:
-            break  # Stop after 10 experiments
-
         X = X_full[feature_set]
         X_train, X_test, y_train, y_test = train_test_split(X, y, stratify=y, test_size=0.2, random_state=42)
-
-        os.makedirs("fraud_analysis_app/data", exist_ok=True)
+        os.makedirs("datas", exist_ok=True)
         X_test.to_parquet("fraud_analysis_app/data/X_test.parquet")
         y_test.to_frame(name="Class").to_parquet("fraud_analysis_app/data/y_test.parquet", index=False)
 
         for model_name in models:
-            if total_runs >= 10:
-                break
+            print(f"\n🔍 Running Optuna study for {model_name} with {feature_set_name}...")
 
             def objective(trial):
                 params = {}
@@ -93,11 +89,18 @@ def main():
 
                 score = cross_val_score(model, X_train, y_train, cv=3, scoring="accuracy").mean()
                 return score
-
+            optuna_dir = f"optuna_artifacts/{model_name}_{feature_set_name}"
+            os.makedirs(optuna_dir, exist_ok=True)
             study = optuna.create_study(direction="maximize")
-            study.optimize(objective, n_trials=20, timeout=300)
+            study.optimize(objective, n_trials=10)
+            trial_results_path = os.path.join(optuna_dir, f"{model_name}_{feature_set_name}_trials.csv")
+            df_trials = study.trials_dataframe()
+            df_trials.to_csv(trial_results_path, index=False)
+            mlflow.log_artifact(trial_results_path)
+            # Log best model to MLflow
             best_params = study.best_params
-
+            
+            # Train final model
             if model_name == "LogisticRegression":
                 best_model = LogisticRegression(**best_params, max_iter=500)
             elif model_name == "RandomForest":
@@ -122,6 +125,7 @@ def main():
                 mlflow.log_metric("recall", rec)
                 mlflow.log_metric("f1_score", f1)
 
+                # ✅ Log model
                 artifact_path = f"{model_name}_{feature_set_name}"
                 mlflow.sklearn.log_model(best_model, artifact_path=artifact_path)
 
@@ -131,6 +135,7 @@ def main():
                 registered_model_name = f"{model_name}_{feature_set_name}_Model"
                 mlflow.register_model(model_uri, registered_model_name)
 
+                # ✅ Log Optuna artifacts
                 optuna_dir = f"optuna_artifacts/{model_name}_{feature_set_name}"
                 os.makedirs(optuna_dir, exist_ok=True)
 
@@ -141,7 +146,7 @@ def main():
                         "best_trial": study.best_trial.number
                     }, f, indent=4)
 
-                # ✅ Save plots
+                # Save plots
                 plt.figure()
                 opt_viz.plot_optimization_history(study)
                 plt.title("Optuna Optimization History")
@@ -154,12 +159,7 @@ def main():
                 plt.savefig(f"{optuna_dir}/param_importance.png")
                 plt.close()
 
-                # ✅ Save Optuna trials
-                trial_results_path = os.path.join(optuna_dir, f"{model_name}_{feature_set_name}_trials.csv")
-                df_trials = study.trials_dataframe()
-                df_trials.to_csv(trial_results_path, index=False)
-
-                mlflow.log_artifact(trial_results_path)
+                # Log artifacts
                 mlflow.log_artifact(f"{optuna_dir}/summary.json")
                 mlflow.log_artifact(f"{optuna_dir}/opt_history.png")
                 mlflow.log_artifact(f"{optuna_dir}/param_importance.png")
@@ -167,8 +167,7 @@ def main():
                 print(f"✅ Run logged for {model_name} with {feature_set_name}")
                 print("🚀 Run ID:", run_id)
 
-            total_runs += 1
 
-
+# ✅ Only runs when script is directly executed
 if __name__ == "__main__":
     main()
