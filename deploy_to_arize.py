@@ -17,7 +17,7 @@ MODEL_VERSION = "v1"
 
 # ✅ MLflow model details
 mlflow.set_tracking_uri("http://127.0.0.1:5000")
-experiment = mlflow.get_experiment_by_name("Fraud_Detection_Comparison_v2")
+experiment = mlflow.get_experiment_by_name("Fraud_Detection_Comparison_v5")
 logistic_model_name = "LogisticRegression_all_features"
 # Find run ID for this model
 runs = mlflow.search_runs(
@@ -42,10 +42,15 @@ else:
     y_test = pd.read_parquet("fraud_analysis_app/data/y_test.parquet")
     if isinstance(y_test, pd.DataFrame):
         y_test = y_test.squeeze()  # ensure it's a Series
-
-    # ✅ Make predictions
+    
+# ✅ Load the trained feature names
+    trained_features = joblib.load("artifacts/feature_names.pkl")
+    # ✅ Align features
+    for col in trained_features:
+        if col not in X_test.columns:
+            X_test[col] = 0  # Fill missing columns
+    X_test = X_test[trained_features]  # Reorder correctly
     y_pred = model.predict(X_test)
-
     # Create dataframe for Arize
     df = X_test.copy()
     df["prediction_id"] = [f"id_{i}" for i in range(len(df))]

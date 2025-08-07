@@ -17,7 +17,6 @@ setup(
     entry_points={
         "console_scripts": [
             'run-training=fraud_analysis_app.models.train_all_models:main',
-            "run-all-train=fraud_analysis_app.models.train_all_experiments:main",
             "run-inference = scripts.run_inference:main",
             "run-agent = scripts.run_agent:main"
         ]

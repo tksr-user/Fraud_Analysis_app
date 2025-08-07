@@ -76,7 +76,9 @@ def main():
         for model_name in models:
             if total_runs >= 10:
                 break
-
+            # Save the feature names uniquely per model-feature combo
+            feature_file_path = f"artifacts/feature_names_{model_name}_{feature_set_name}.pkl"
+            joblib.dump(X_train.columns.tolist(), feature_file_path)
             def objective(trial):
                 params = {}
                 if model_name == "LogisticRegression":
@@ -140,19 +142,21 @@ def main():
                         "best_value": study.best_value,
                         "best_trial": study.best_trial.number
                     }, f, indent=4)
-
-                # ✅ Save plots
-                plt.figure()
-                opt_viz.plot_optimization_history(study)
-                plt.title("Optuna Optimization History")
-                plt.savefig(f"{optuna_dir}/opt_history.png")
-                plt.close()
-
-                plt.figure()
-                opt_viz.plot_param_importances(study)
-                plt.title("Optuna Param Importance")
-                plt.savefig(f"{optuna_dir}/param_importance.png")
-                plt.close()
+                try:
+                    # ✅ Save plots
+                    plt.figure()
+                    opt_viz.plot_optimization_history(study)
+                    plt.title("Optuna Optimization History")
+                    plt.savefig(f"{optuna_dir}/opt_history.png")
+                    plt.close()
+    
+                    plt.figure()
+                    opt_viz.plot_param_importances(study)
+                    plt.title("Optuna Param Importance")
+                    plt.savefig(f"{optuna_dir}/param_importance.png")
+                    plt.close()
+                except RuntimeError as e:
+                    print(f"⚠️ Skipping param importance plot for {model_name}_{feature_set_name}: {e}")
 
                 # ✅ Save Optuna trials
                 trial_results_path = os.path.join(optuna_dir, f"{model_name}_{feature_set_name}_trials.csv")

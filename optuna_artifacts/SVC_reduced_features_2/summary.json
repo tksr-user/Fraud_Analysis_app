@@ -1,7 +1,7 @@
 {
     "best_params": {
         "C": 0.1,
-        "kernel": "rbf"
+        "kernel": "linear"
     },
     "best_value": 0.9975031210986267,
     "best_trial": 0
