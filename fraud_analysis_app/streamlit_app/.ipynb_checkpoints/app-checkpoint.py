@@ -6,8 +6,8 @@ import mlflow
 from mlflow.tracking import MlflowClient
 
 # AI Agent modules
-from fraud_analysis_app.agent.run_agent import run_agent
-from fraud_analysis_app.agent.create_prompt import fetch_mlflow_runs, create_comparison_prompt
+from fraud_analysis_app.agent.run_agent_bedrock import run_agent_bedrock
+from fraud_analysis_app.agent.create_comperison_prompt import fetch_mlflow_runs, create_comparison_prompt
 
 
 # ------------------ Configuration ------------------
@@ -111,26 +111,25 @@ else:
     target_run_id = st.selectbox("🎯 Select Target Model (Run ID)", df_runs["run_id"].tolist())
 
     if st.button("🧠 Run AI Agent"):
-        with st.spinner("Generating comparison..."):
-            mlflow_prompt = create_comparison_prompt(df_runs, target_run_id)
+        with st.spinner("Generating comparison using Bedrock..."):
+            try:
+                mlflow_prompt = create_comparison_prompt(df_runs, target_run_id)
 
-            response = run_agent(
-                mlflow_metrics=mlflow_prompt,
-                #arize_metrics="",  # Future: Add Arize comparison
-                prompt_template=PROMPT_TEMPLATE
-            )
+                response = run_agent_bedrock(prompt=mlflow_prompt)
 
-        st.success("✅ AI Agent Response")
-        st.text_area("🧾 Model Comparison Report", value=response, height=400)
+                   
 
-        # Optional: Save locally
-        with open("artifacts/ai_model_comparison.txt", "w", encoding="utf-8") as f:
-            f.write(response)
+                st.success("✅ AI Agent Response")
+                st.text_area("🧾 Model Comparison Report", value=response, height=400)
 
-        # Optional: Download button
-        st.download_button(
-            label="⬇️ Download AI Report",
-            data=response,
-            file_name="ai_model_comparison.txt",
-            mime="text/plain"
-        )
+                with open("artifacts/ai_model_comparison.txt", "w", encoding="utf-8") as f:
+                    f.write(response)
+
+                st.download_button(
+                    label="⬇️ Download AI Report",
+                    data=response,
+                    file_name="ai_model_comparison.txt",
+                    mime="text/plain"
+                )
+            except Exception as e:
+                st.error(f"Error: {str(e)}")

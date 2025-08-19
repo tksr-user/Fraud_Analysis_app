@@ -1,0 +1,8 @@
+{
+    "best_params": {
+        "C": 0.1,
+        "kernel": "linear"
+    },
+    "best_value": 0.9987515605493135,
+    "best_trial": 2
+}

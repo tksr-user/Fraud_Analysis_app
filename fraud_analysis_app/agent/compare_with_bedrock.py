@@ -23,7 +23,7 @@ target_run_id = best_run["run_id"]
 prompt = create_comparison_prompt(df_runs, target_run_id)
 
 # Step 4: Run through Bedrock agent
-response = run_bedrock_agent(prompt)
+response = run_bedrock_agent(prompt, model_id="amazon.titan-text-lite-v1")
 
 # Step 5: Show result
 print("\n=== AI Agent Response ===\n")

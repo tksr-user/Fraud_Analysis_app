@@ -3,6 +3,5 @@ __pycache__/
 .env
 venv/
 mlruns/
-*fraud_analysis_app/data/fraud_data.parquet
 *optuna_aritfcts
 *fraud_analysis_app/agent/.gpt4all

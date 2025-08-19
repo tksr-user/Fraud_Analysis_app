@@ -1,0 +1,8 @@
+{
+    "best_params": {
+        "C": 1,
+        "kernel": "rbf"
+    },
+    "best_value": 0.9975031210986267,
+    "best_trial": 0
+}
